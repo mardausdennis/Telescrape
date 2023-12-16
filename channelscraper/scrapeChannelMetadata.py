@@ -1,5 +1,5 @@
+import sys
 import time
-
 import telethon
 import os
 import yaml
@@ -11,27 +11,29 @@ from telethon.tl.functions.channels import GetFullChannelRequest
 from utilities import getInputPath, getOutputPath
 from driver import Driver
 
+# Argumente von der Kommandozeile lesen
+selected_channel_ids = sys.argv[1:]
 
-def getChannelList(filename):
+def getChannelList(filename, selected_ids=None):
     """Initialises the CSV of channels to scrape given by ADDENDUM."""
     channelList = []
-    with open(getInputPath() + '/' + filename, newline='',
-              encoding='utf-8') as csvfile:
+    with open(getInputPath() + '/' + filename, newline='', encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile)
-        csvList = list(reader)
-        for row in csvList[1:]:
-            channelList.append(row[2].split("/")[-1])
+        next(reader)  # Kopfzeile überspringen
+        for index, row in enumerate(reader, start=1):
+            if not selected_ids or str(index) in selected_ids:
+                channelList.append(row[2].split("/")[-1])
     return channelList
 
 client = Client.getClient()
 config = yaml.safe_load(open("config.yaml"))
 input_file = config["input_channel_file"]
-channels = getChannelList(input_file)
+channels = getChannelList(input_file, selected_channel_ids)
 
-channel_info_list = list()
-i = 1
+channel_info_list = []
+i = 0
 for channel in channels:
-    i = i + 1
+    i += 1
     print("Channel: " + channel + " Nr: " + str(i))
     time.sleep(3)
     try:
@@ -50,8 +52,7 @@ for channel in channels:
                 , address])
     except:
         traceback.print_exc()
-        channelExists = False
-        print("Channel '" + channel + "' does not exist.")
+        print(f"Channel '{channel}' does not exist.")
 
 with open(getInputPath() + '/' + '/channel_info.csv', mode="w",
           newline='',

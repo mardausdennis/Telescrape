@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime
 from datetime import timedelta
 import traceback
@@ -11,21 +12,25 @@ from utilities import getInputPath
 from channel import Channel
 from driver import Driver
 
+# Argumente von der Kommandozeile lesen
+selected_channel_ids = sys.argv[1:]  # Erstes Element überspringen, da es den Skriptnamen enthält
 
-def getChannelList(filename):
+def getChannelList(filename, selected_ids=None):
     """Initialises the CSV of channels to scrape given by ADDENDUM."""
     channelList = []
     with open(getInputPath() + '/' + filename, newline='', encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile)
-        csvList = list(reader)
-        for row in csvList[1:]:
-            channelList.append(Channel(row[2], row[4]))
+        next(reader)  # Kopfzeile überspringen
+        for index, row in enumerate(reader, start=1):
+            if not selected_ids or str(index) in selected_ids:
+                channelList.append(Channel(row[2], row[4]))
     return channelList
 
-
+# Konfiguration und Kanalliste laden
 config = yaml.safe_load(open("config.yaml"))
 input_file = config["input_channel_file"]
-channels = getChannelList(input_file)
+channels = getChannelList(input_file, selected_channel_ids)
+
 
 for channel in channels:
     channelPath = getInputPath() + "/" + channel.username

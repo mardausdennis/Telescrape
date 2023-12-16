@@ -50,10 +50,97 @@
     <div class="container">
       <h1>Telegram Scraper Dokumentation</h1>
 
+      <h2>setup.bat</h2>
+      <p>
+        Das Setup-Skript automatisiert die Einrichtung der Umgebung für den
+        Telegram Scraper. Es überprüft und installiert notwendige Komponenten
+        und konfiguriert die Anwendung.
+      </p>
+      <ul>
+        <li>
+          <strong>Überprüfung der Python-Installation:</strong> Stellt sicher,
+          dass Python installiert ist.
+        </li>
+        <li>
+          <strong>Installation von pip:</strong> Überprüft und installiert pip,
+          falls erforderlich.
+        </li>
+        <li>
+          <strong>Erstellung einer virtuellen Umgebung:</strong> Erstellt eine
+          virtuelle Umgebung, wenn sie noch nicht existiert.
+        </li>
+        <li>
+          <strong>Aktivierung der virtuellen Umgebung:</strong> Aktiviert die
+          virtuelle Umgebung und installiert Abhängigkeiten.
+        </li>
+        <li>
+          <strong>Überprüfung und Erstellung der config.yaml Datei:</strong>
+          Erstellt eine Standard-Konfigurationsdatei, falls sie nicht vorhanden
+          ist.
+        </li>
+        <li>
+          <strong>Benutzereingaben für API-Informationen:</strong> Fordert den
+          Benutzer zur Eingabe der Telegram API-Informationen auf.
+        </li>
+        <li>
+          <strong>Aktualisierung der Konfigurationsdatei:</strong> Aktualisiert
+          die Konfigurationsdatei mit den Benutzereingaben.
+        </li>
+        <li>
+          <strong>Abschluss des Setups:</strong> Informiert den Benutzer über
+          den Abschluss der Konfiguration und deaktiviert die virtuelle
+          Umgebung.
+        </li>
+      </ul>
+
+      <h2>start.bat</h2>
+      <p>
+        Das Start-Skript initialisiert und startet den Telegram Scraper. Es
+        kümmert sich um die Vorbereitung und Ausführung der nötigen Schritte.
+      </p>
+      <ul>
+        <li>
+          <strong>Verzeichnispfade festlegen:</strong> Bestimmt die Pfade zum
+          Scraper- und zum virtuellen Umgebungsverzeichnis.
+        </li>
+        <li>
+          <strong>Überprüfung des Setups:</strong> Stellt sicher, dass das
+          Setup-Skript bereits ausgeführt wurde.
+        </li>
+        <li>
+          <strong>Python-Version überprüfen:</strong> Ermittelt, ob Python oder
+          Python3 verfügbar ist.
+        </li>
+        <li>
+          <strong>Modusauswahl durch Benutzer:</strong> Lässt den Benutzer
+          zwischen Normal- und Meta-Modus wählen.
+        </li>
+        <li>
+          <strong>Aktivieren der virtuellen Umgebung:</strong> Aktiviert die
+          zuvor erstellte virtuelle Umgebung.
+        </li>
+        <li>
+          <strong>Ausführen von manage_channels.py:</strong> Führt das
+          Python-Skript zur Kanalverwaltung aus.
+        </li>
+        <li>
+          <strong>Rückkehr zum ursprünglichen Verzeichnis:</strong> Kehrt nach
+          der Ausführung zum Startverzeichnis zurück.
+        </li>
+        <li>
+          <strong>Deaktivieren der virtuellen Umgebung:</strong> Deaktiviert die
+          virtuelle Umgebung nach Abschluss des Vorgangs.
+        </li>
+        <li>
+          <strong>Abschlussmeldung:</strong> Informiert den Benutzer über den
+          Abschluss des Vorgangs.
+        </li>
+      </ul>
+
       <h2>app.py</h2>
       <p>
-        Diese Datei scheint der Hauptteil der Telegram-Scraper-Anwendung zu
-        sein. Hier sind die Hauptfunktionen:
+        Diese Datei ist der Hauptteil der Telegram-Scraper-Anwendung zu sein.
+        Hier sind die Hauptfunktionen:
       </p>
       <ul>
         <li>
@@ -82,10 +169,43 @@
         </li>
       </ul>
 
+      <h2>manage_channels.py</h2>
+      <p>
+        Diese Datei beinhaltet Funktionen zur Verwaltung von Telegram-Kanälen.
+        Sie ermöglicht das Hinzufügen, Auflisten und Auswählen von Kanälen für
+        das Scraping.
+      </p>
+      <ul>
+        <li>
+          <strong>Funktion <code>getInputPath</code>:</strong> Bestimmt den Pfad
+          zum Input-Verzeichnis.
+        </li>
+        <li>
+          <strong>Funktion <code>listChannels</code>:</strong> Listet alle
+          verfügbaren Kanäle aus einer CSV-Datei.
+        </li>
+        <li>
+          <strong>Funktion <code>selectChannel</code>:</strong> Ermöglicht die
+          Auswahl spezifischer Kanäle für das Scraping.
+        </li>
+        <li>
+          <strong>Funktion <code>addChannel</code>:</strong> Fügt neue Kanäle
+          zur CSV-Datei hinzu.
+        </li>
+        <li>
+          <strong>Funktion <code>runScraper</code>:</strong> Startet den
+          Scraper-Prozess basierend auf der Auswahl und dem Modus.
+        </li>
+        <li>
+          <strong>Hauptfunktion <code>main</code>:</strong> Steuert den Ablauf
+          des Scripts, einschließlich Kanalauswahl und Scraper-Start.
+        </li>
+      </ul>
+
       <h2>bots.py</h2>
       <p>
-        Diese Datei scheint Funktionen für das Scrapen von Kommentaren zu
-        enthalten. Hauptfunktionen:
+        Diese Datei enthält Funktionen für das Scrapen von Kommentaren.
+        Hauptfunktionen:
       </p>
       <ul>
         <li>
