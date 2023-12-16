@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Telegram Scraper Dokumentation</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        background-color: #121212;
+        color: #fff;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        width: 50%;
+        margin: 0 auto;
+      }
+      h1,
+      h2 {
+        color: #4caf50;
+      }
+      p,
+      li {
+        color: #ccc;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      li {
+        margin-bottom: 10px;
+        background-color: #1e1e1e;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+      code {
+        background-color: #282828;
+        color: #bada55;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      strong {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Telegram Scraper Dokumentation</h1>
+
+      <h2>app.py</h2>
+      <p>
+        Diese Datei scheint der Hauptteil der Telegram-Scraper-Anwendung zu
+        sein. Hier sind die Hauptfunktionen:
+      </p>
+      <ul>
+        <li>
+          <strong>Import von Modulen und Klassen:</strong> Verschiedene Module
+          und Klassen aus anderen Dateien werden importiert.
+        </li>
+        <li>
+          <strong>Funktion <code>getChannelList</code>:</strong> Liest eine
+          CSV-Datei und gibt eine Liste von Channel-Objekten zurück.
+        </li>
+        <li>
+          <strong>Laden der Konfigurationsdatei:</strong>
+          <code>config.yaml</code> wird geladen, um verschiedene Einstellungen
+          zu erhalten.
+        </li>
+        <li>
+          <strong>Initialisierung und Ausführung des Scraping-Vorgangs.</strong>
+        </li>
+        <li>
+          <strong>Fehlerbehandlung:</strong> try-except-Blöcke fangen Fehler
+          während des Scraping-Vorgangs ab und loggen diese.
+        </li>
+        <li>
+          <strong>Schließen des Treibers:</strong> Der Web-Treiber für Selenium
+          wird am Ende geschlossen.
+        </li>
+      </ul>
+
+      <h2>bots.py</h2>
+      <p>
+        Diese Datei scheint Funktionen für das Scrapen von Kommentaren zu
+        enthalten. Hauptfunktionen:
+      </p>
+      <ul>
+        <li>
+          <strong>Import von Modulen und Klassen:</strong> Module und Klassen
+          für das Scrapen von Kommentaren werden importiert.
+        </li>
+        <li>
+          <strong>Klasse <code>Bots</code>:</strong> Beinhaltet Methoden zum
+          Scrapen von Kommentaren.
+        </li>
+        <li>
+          <strong
+            >Methoden zum Laden und Analysieren von Kommentarseiten.</strong
+          >
+        </li>
+        <li>
+          <strong>Methoden zum Scrapen spezifischer Kommentar-Bots.</strong>
+        </li>
+        <li>
+          <strong>Verarbeitung von Kommentardaten in Message-Objekte.</strong>
+        </li>
+      </ul>
+
+      <h2>channel.py</h2>
+      <p>
+        Der Code in channel.py ist ein Teil des Telegram-Scrapers.
+        Hauptfunktionen:
+      </p>
+      <ul>
+        <li>
+          <strong>Initialisierung:</strong> Konstruktor
+          <code>__init__</code> initialisiert wichtige Eigenschaften.
+        </li>
+        <li>
+          <strong>Scraping:</strong> Methoden
+          <code>getRecentChannelMessages</code> und
+          <code>getAllChannelMessages</code>.
+        </li>
+        <li>
+          <strong>Nachrichtenanalyse:</strong> Methode
+          <code>parseMessage</code> verarbeitet Nachrichten und extrahiert
+          Informationen.
+        </li>
+        <li>
+          <strong
+            >Kommentar-Handling innerhalb von <code>parseMessage</code>.</strong
+          >
+        </li>
+        <li>
+          <strong>CSV-Export:</strong> Methode <code>writeCsv</code> erstellt
+          CSV-Dateien für gesammelte Daten.
+        </li>
+        <li>
+          <strong>Weiterleitungsinformationen:</strong> Methode
+          <code>__parseForward</code> extrahiert Informationen über
+          weitergeleitete Nachrichten.
+        </li>
+        <li>
+          <strong>Benutzer-Scraping:</strong> Methode
+          <code>getChannelUsers</code> extrahiert Benutzerinformationen.
+        </li>
+      </ul>
+
+      <!-- client.py -->
+      <h2>client.py</h2>
+      <p>
+        <strong>Zweck:</strong> Definiert die <code>Client</code>-Klasse für die
+        Interaktion mit der Telegram-API.
+      </p>
+      <ul>
+        <li>
+          <strong>Funktionsweise:</strong> Die Klasse <code>Client</code> ist
+          als Singleton implementiert und stellt eine Verbindung mit der
+          Telegram-API her.
+        </li>
+      </ul>
+
+      <!-- config.py -->
+      <h2>config.py</h2>
+      <p>
+        <strong>Zweck:</strong> Definiert die <code>Config</code>-Klasse für das
+        Laden der Konfigurationsdaten aus <code>config.yaml</code>.
+      </p>
+      <ul>
+        <li>
+          <strong>Funktionsweise:</strong> <code>Config</code> ist als Singleton
+          implementiert und speichert Konfigurationsdaten in einer
+          Klassenvariablen.
+        </li>
+      </ul>
+
+      <!-- config.yaml -->
+      <h2>config.yaml</h2>
+      <p>
+        <strong>Zweck:</strong> Enthält Konfigurationseinstellungen für den
+        Scraper.
+      </p>
+      <ul>
+        <li>
+          <strong>Inhalt:</strong> Wichtige Parameter wie API-ID, API-Hash,
+          Telefonnummer und Scraping-Einstellungen.
+        </li>
+      </ul>
+
+      <!-- driver.py -->
+      <h2>driver.py</h2>
+      <p>
+        <strong>Zweck:</strong> Verantwortlich für das Initialisieren und
+        Verwalten des Selenium <code>WebDrivers</code>.
+      </p>
+      <ul>
+        <li>
+          <strong><code>getDriver()</code>:</strong> Erzeugung oder Rückgabe
+          einer Instanz des <code>WebDrivers</code>.
+        </li>
+        <li>
+          <strong><code>closeDriver()</code>:</strong> Schließt den
+          <code>WebDriver</code>.
+        </li>
+        <li>
+          <strong>Design:</strong> Die Klasse <code>Driver</code> ist als
+          Singleton implementiert.
+        </li>
+      </ul>
+
+      <!-- message.py -->
+      <h2>message.py</h2>
+      <p>
+        <strong>Zweck:</strong> Definiert eine Klasse <code>Message</code> zur
+        Speicherung und Verarbeitung von Telegram-Nachrichten.
+      </p>
+      <ul>
+        <li>
+          <strong>Eigenschaften:</strong> Speichert Aspekte einer Nachricht wie
+          Text, ID, Zeitstempel, Sichtzahlen usw.
+        </li>
+        <li>
+          <strong
+            ><code>getMessageHeader()</code> und
+            <code>getUserHeader()</code>:</strong
+          >
+          definieren die CSV-Struktur.
+        </li>
+        <li>
+          <strong><code>getMessageRow()</code>:</strong> generiert eine
+          Datenreihe für die CSV-Ausgabe.
+        </li>
+      </ul>
+
+      <!-- scrapeChannelMetadata.py -->
+      <h2>scrapeChannelMetadata.py</h2>
+      <p>
+        <strong>Zweck:</strong> Skript zum Abrufen und Speichern von Metadaten
+        zu Telegram-Kanälen.
+      </p>
+      <ul>
+        <li>
+          <strong><code>getChannelList(filename)</code>:</strong> Liest
+          Kanalliste aus einer CSV-Datei.
+        </li>
+        <li>
+          <strong
+            >Speichert gesammelte Daten in
+            <code>channel_info.csv</code>.</strong
+          >
+        </li>
+        <li>
+          <strong>Design:</strong> Führt Schritte sequentiell aus und behandelt
+          Fehler.
+        </li>
+      </ul>
+
+      <!-- utilities.py -->
+      <h2>utilities.py</h2>
+      <p><strong>Enthält Hilfsfunktionen für das Projekt.</strong></p>
+      <ul>
+        <li>
+          <strong
+            ><code>getInputPath()</code> und
+            <code>getOutputPath()</code>:</strong
+          >
+          Gibt Pfade zu input- bzw. output-Verzeichnissen zurück.
+        </li>
+        <li>
+          <strong><code>concat(first_name, last_name)</code>:</strong> Verbindet
+          Vor- und Nachnamen.
+        </li>
+        <li>
+          <strong><code>eliminateWhitespaces(text)</code>:</strong> Entfernt
+          überflüssige Leerzeichen.
+        </li>
+        <li>
+          <strong><code>calcDateOffset(offset)</code>:</strong> Berechnet ein
+          vergangenes Datum.
+        </li>
+        <li>
+          <strong><code>wait()</code>:</strong> Führt eine zufällige Verzögerung
+          ein.
+        </li>
+        <li>
+          <strong><code>create_path_if_not_exists(channelPath)</code>:</strong>
+          Erstellt ein Verzeichnis, falls nicht vorhanden.
+        </li>
+        <li>
+          <strong><code>extractUrls(message)</code>:</strong> Extrahiert URLs
+          aus einer Nachricht.
+        </li>
+        <li>
+          <strong><code>getClassName(object)</code>:</strong> Gibt den
+          Klassennamen eines Objekts zurück.
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
