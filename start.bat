@@ -71,7 +71,7 @@ IF /I "!MODE_LOWER!"=="n" (
 
 :SCRAPE_MODUS_AKTUALISIEREN
 :: Scrape-Modus aktualisieren
-SET /P SCRAPE_MODE="Scrape-Modus wählen (Full/Offset) oder drücke Enter, um den aktuellen beizubehalten: "
+SET /P SCRAPE_MODE="Scrape-Modus wählen (Full/Offset/Latest) oder drücke Enter, um den aktuellen beizubehalten: "
 SET SCRAPE_MODE_LOWER=!SCRAPE_MODE:~0,1!
 IF "%SCRAPE_MODE%"=="" GOTO SHOW_UPDATED_CONFIG
 IF /I "!SCRAPE_MODE_LOWER!"=="f" (
@@ -84,8 +84,10 @@ IF /I "!SCRAPE_MODE_LOWER!"=="f" (
     IF !OFFSET_DAYS! LSS 0 SET OFFSET_DAYS=0
     IF !OFFSET_DAYS! GTR 9999 SET OFFSET_DAYS=9999
     CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% offset !OFFSET_DAYS!
+) ELSE IF /I "!SCRAPE_MODE_LOWER!"=="l" (
+    CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% latest
 ) ELSE (
-    ECHO Ungültige Eingabe. Bitte wähle entweder 'Full' oder 'Offset'.
+    ECHO Ungültige Eingabe. Bitte wähle entweder 'Full', 'Offset' oder 'Latest'.
     GOTO SCRAPE_MODUS_AKTUALISIEREN
 )
 
@@ -96,8 +98,6 @@ CALL %PYTHON_CMD% %SCRAPER_DIR%\read_config.py %SCRAPER_DIR%
 GOTO END_UPDATE
 
 :END_UPDATE
-
-
 
 :: Wechsle in das Verzeichnis des Scrapers
 CD /D "%SCRAPER_DIR%"

@@ -4,6 +4,8 @@ import logging
 import os
 import time
 import traceback
+import glob
+
 from datetime import datetime
 
 import telethon.tl.types.messages
@@ -40,10 +42,40 @@ class Channel:
             self.getRecentChannelMessages()
         elif Channel.config.get("scrape_mode") == "FULL_SCRAPE":
             self.getAllChannelMessages()
+        elif Channel.config.get("scrape_mode") == "LATEST_SCRAPE":
+            self.getLatestChannelMessages()
         else:
             raise AttributeError("Invalid scraping mode set in config file.")
 
-    # Collects messages and comments from a given channel.
+    # Collects ALL LATEST messages and comments from a given channel with OFFSET.
+    def getLatestChannelMessages(self):
+        """ Scrapes messages of a channel since the last saved message and saves the information in the channel object.
+        """
+
+        async def main():
+            last_timestamp, last_content = self.getLastMessageInfo()
+            if last_timestamp:
+                async for message in Channel.client.iter_messages(self.username, offset_date=last_timestamp, reverse=True):
+                    if type(message) == telethon.tl.types.Message:
+                        message_time = message.date.replace(tzinfo=None)
+                        if message_time > last_timestamp or (message_time == last_timestamp and message.text != last_content):
+                            await self.parseMessage(message)
+
+        with Channel.client:
+            try:
+                Channel.client.loop.run_until_complete(main())
+            except telethon.errors.ServerError:
+                logging.info("Server error: Passed")
+                pass
+            except telethon.errors.FloodWaitError as e:
+                logging.info("FloodWaitError: Sleep for " + str(e.seconds))
+                time.sleep(e.seconds)
+
+        self.messages = list(reversed(self.messages))
+
+
+
+    # Collects messages and comments from a given channel with OFFSET.
     def getRecentChannelMessages(self):
         """ Scrapes messages of a channel of the last X days and saves the information in the channel object.
         """
@@ -66,7 +98,7 @@ class Channel:
 
         self.messages = list(reversed(self.messages))
 
-    # Collects messages and comments from a given channel.
+    # Collects ALL messages and comments from a given channel.
     def getAllChannelMessages(self):
         """ Scrapes all messages of a channel and saves the information in the channel object.
         """
@@ -85,6 +117,32 @@ class Channel:
             except telethon.errors.FloodWaitError as e:
                 logging.info("FloodWaitError: Sleep for " + str(e.seconds))
                 time.sleep(e.seconds)
+
+
+    def getLastMessageInfo(self):
+        try:
+            # Finde die neueste CSV-Datei, die mit "chatlogs" beginnt
+            list_of_files = glob.glob(self.path + '/chatlogs*.csv') 
+            latest_file = max(list_of_files, key=os.path.getctime)
+
+            # Lese den Timestamp und Inhalt aus der ersten Zeile der neuesten CSV-Datei
+            with open(latest_file, 'r', encoding='utf-8') as file:
+                csv_reader = csv.DictReader(file)
+                first_line = next(csv_reader, None)
+                if first_line:
+                    last_timestamp_str = first_line["timestamp"]
+                    if '+' in last_timestamp_str:
+                        last_timestamp_str = last_timestamp_str.split('+')[0]
+                    last_timestamp = datetime.strptime(last_timestamp_str, '%Y-%m-%d %H:%M:%S')
+                    last_content = first_line["content"]
+                    return last_timestamp, last_content
+        except Exception as e:
+            logging.error(f"Fehler beim Lesen des letzten Timestamps und Inhalts: {e}")
+            return None, None
+
+
+
+
 
     async def parseMessage(self, message):
         # Wait to prevent getting blocked
