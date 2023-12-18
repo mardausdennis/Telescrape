@@ -71,7 +71,7 @@ IF /I "!MODE_LOWER!"=="n" (
 
 :SCRAPE_MODUS_AKTUALISIEREN
 :: Scrape-Modus aktualisieren
-SET /P SCRAPE_MODE="Scrape-Modus wählen (Full/Offset/Latest) oder drücke Enter, um den aktuellen beizubehalten: "
+SET /P SCRAPE_MODE="Scrape-Modus wählen (Full/Offset/Latest/Continuous) oder drücke Enter, um den aktuellen beizubehalten: "
 SET SCRAPE_MODE_LOWER=!SCRAPE_MODE:~0,1!
 IF "%SCRAPE_MODE%"=="" GOTO SHOW_UPDATED_CONFIG
 IF /I "!SCRAPE_MODE_LOWER!"=="f" (
@@ -86,6 +86,8 @@ IF /I "!SCRAPE_MODE_LOWER!"=="f" (
     CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% offset !OFFSET_DAYS!
 ) ELSE IF /I "!SCRAPE_MODE_LOWER!"=="l" (
     CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% latest
+) ELSE IF /I "!SCRAPE_MODE_LOWER!"=="c" (
+    CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% continuous
 ) ELSE (
     ECHO Ungültige Eingabe. Bitte wähle entweder 'Full', 'Offset' oder 'Latest'.
     GOTO SCRAPE_MODUS_AKTUALISIEREN

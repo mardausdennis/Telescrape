@@ -15,6 +15,8 @@ def update_config(scraper_dir, key, value):
         config['scrape_mode'] = 'FULL_SCRAPE'
     elif key == 'latest': 
         config['scrape_mode'] = 'LATEST_SCRAPE'
+    elif key == 'continuous': 
+        config['scrape_mode'] = 'CONTINUOUS_SCRAPE'
 
     with open(config_path, 'w') as file:
         yaml.dump(config, file)

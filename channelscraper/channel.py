@@ -44,16 +44,95 @@ class Channel:
             self.getAllChannelMessages()
         elif Channel.config.get("scrape_mode") == "LATEST_SCRAPE":
             self.getLatestChannelMessages()
+        elif Channel.config.get("scrape_mode") == "CONTINUOUS_SCRAPE":
+            self.continuousScrape()  
         else:
             raise AttributeError("Invalid scraping mode set in config file.")
 
-    # Collects ALL LATEST messages and comments from a given channel with OFFSET.
+
+    def continuousScrape(self):
+        """ Continuously scrapes new messages every minute. """
+        last_timestamp, last_content = self.getLastMessageInfo()
+        first_run = True  # Variable, um zu überprüfen, ob es der erste Durchlauf ist
+
+        if last_timestamp is None:
+            self.getRecentChannelMessages()
+            self.writeCsv(append=False)  # Erstelle eine neue CSV-Datei
+            last_timestamp, last_content = self.getLastMessageInfo()  # Aktualisiere die Werte
+            first_run = False  # Nach getRecentChannelMessages ist es nicht mehr der erste Durchlauf
+
+        async def fetchMessages():
+            nonlocal last_timestamp, last_content, first_run
+            while True:
+                new_messages = False  # Flag um festzustellen, ob neue Nachrichten gefunden wurden
+
+                async for message in Channel.client.iter_messages(self.username, offset_date=last_timestamp, reverse=True):
+                    if isinstance(message, telethon.tl.types.Message):
+                        message_time = message.date.replace(tzinfo=None)
+                        if last_timestamp is not None and (message_time > last_timestamp or (message_time == last_timestamp and message.text != last_content)):
+                            await self.parseMessage(message)
+                            last_timestamp, last_content = message_time, message.text
+                            new_messages = True
+
+                if new_messages:
+                    self.writeCsv(append=not first_run)
+                    if first_run:
+                        first_run = False  # Setze first_run auf False nach dem ersten Durchlauf
+
+                await asyncio.sleep(10)  # Warte 10 Sekunden
+
+        with Channel.client:
+            try:
+                Channel.client.loop.run_until_complete(fetchMessages())
+            except Exception as e:
+                logging.error(f"Error during continuous scrape: {e}")
+                pass
+
+
+
+
+
+    # Collects LATEST messages and comments from a given channel.
     def getLatestChannelMessages(self):
         """ Scrapes messages of a channel since the last saved message and saves the information in the channel object.
         """
 
         async def main():
             last_timestamp, last_content = self.getLastMessageInfo()
+            if last_timestamp:
+                async for message in Channel.client.iter_messages(self.username, offset_date=last_timestamp, reverse=True):
+                    if type(message) == telethon.tl.types.Message:
+                        message_time = message.date.replace(tzinfo=None)
+                        if message_time > last_timestamp or (message_time == last_timestamp and message.text != last_content):
+                            await self.parseMessage(message)
+
+        with Channel.client:
+            try:
+                Channel.client.loop.run_until_complete(main())
+            except telethon.errors.ServerError:
+                logging.info("Server error: Passed")
+                pass
+            except telethon.errors.FloodWaitError as e:
+                logging.info("FloodWaitError: Sleep for " + str(e.seconds))
+                time.sleep(e.seconds)
+
+        self.messages = list(reversed(self.messages))
+
+
+
+
+    # Collects LATEST messages and comments from a given channel.
+    def getLatestChannelMessages(self):
+        """ Scrapes messages of a channel since the last saved message and saves the information in the channel object.
+        """
+
+        async def main():
+            last_timestamp, last_content = self.getLastMessageInfo()
+
+            if last_timestamp is None:
+                self.getRecentChannelMessages()
+                return
+
             if last_timestamp:
                 async for message in Channel.client.iter_messages(self.username, offset_date=last_timestamp, reverse=True):
                     if type(message) == telethon.tl.types.Message:
@@ -122,25 +201,32 @@ class Channel:
     def getLastMessageInfo(self):
         try:
             # Finde die neueste CSV-Datei, die mit "chatlogs" beginnt
-            list_of_files = glob.glob(self.path + '/chatlogs*.csv') 
+            list_of_files = glob.glob(self.path + '/chatlogs*.csv')
+
+            if not list_of_files:
+                raise FileNotFoundError("Keine CSV-Datei gefunden")
+
             latest_file = max(list_of_files, key=os.path.getctime)
 
-            # Lese den Timestamp und Inhalt aus der ersten Zeile der neuesten CSV-Datei
+            # Lese den Timestamp und Inhalt aus der letzten Zeile der neuesten CSV-Datei
             with open(latest_file, 'r', encoding='utf-8') as file:
                 csv_reader = csv.DictReader(file)
-                first_line = next(csv_reader, None)
-                if first_line:
-                    last_timestamp_str = first_line["timestamp"]
+                last_line = None
+                for line in csv_reader:
+                    last_line = line
+                if last_line:
+                    last_timestamp_str = last_line["timestamp"]
                     if '+' in last_timestamp_str:
                         last_timestamp_str = last_timestamp_str.split('+')[0]
                     last_timestamp = datetime.strptime(last_timestamp_str, '%Y-%m-%d %H:%M:%S')
-                    last_content = first_line["content"]
+                    last_content = last_line["content"]
                     return last_timestamp, last_content
+        except FileNotFoundError:
+            logging.info("Keine CSV-Datei bzw. LastMessage gefunden. Hole alle Nachrichten der letzten " + str(Channel.config.get("scrape_offset")) + " Tage zuerst.")
         except Exception as e:
-            logging.error(f"Fehler beim Lesen des letzten Timestamps und Inhalts: {e}")
-            return None, None
+            logging.error(f"Fehler beim Lesen der letzten Nachrichteninformationen: {e}")
 
-
+        return None, None
 
 
 
@@ -228,33 +314,58 @@ class Channel:
             new_message.comments = comments
         self.messages.append(new_message)
 
-    def writeCsv(self):
-        if len(self.messages) == 0:
-            raise LookupError("Nothing to write. You have to execute 'scrape' method first.")
 
-        chatlogs_csv = self.path + "/chatlogs_" + str(datetime.now().strftime("%Y-%m-%d--%H-%M-%S")) + ".csv"
-        users_csv = self.path + "/users" + str(datetime.now().strftime("%Y-%m-%d--%H-%M-%S")) + ".csv"
+    def writeCsv(self, append=False):
+        # Basispfad für die Dateien
+        chatlogs_base = self.path + "/chatlogs_"
+        users_base = self.path + "/users_"
 
-        # WRITE MESSAGES AND COMMENTS
-        with open(chatlogs_csv, "w", encoding="utf-8", newline='') as chatFile:
+        if append:
+            # Liste alle Dateien im Verzeichnis auf, die dem Muster entsprechen
+            chatlogs_files = glob.glob(chatlogs_base + "*.csv")
+            users_files = glob.glob(users_base + "*.csv")
+
+            # Wähle die neuesten Dateien, falls vorhanden
+            chatlogs_csv = max(chatlogs_files, key=os.path.getctime, default=None)
+            users_csv = max(users_files, key=os.path.getctime, default=None)
+
+            # Erstelle neue Dateien, falls keine vorhanden sind
+            if chatlogs_csv is None or users_csv is None:
+                append = False
+
+        if not append:
+            # Erstelle neue Dateien mit Zeitstempel im Namen
+            current_time_str = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+            chatlogs_csv = chatlogs_base + current_time_str + ".csv"
+            users_csv = users_base + current_time_str + ".csv"
+
+        # Schreiben der Nachrichten in chatlogs_csv
+        with open(chatlogs_csv, "a" if append else "w", encoding="utf-8", newline='') as chatFile:
             writer = csv.writer(chatFile)
-            writer.writerow(Message.getMessageHeader())
-            for message in self.messages:
+            if not append:  # Schreibe Kopfzeile nur beim ersten Mal
+                writer.writerow(Message.getMessageHeader())
+
+            # Kehre die Reihenfolge der Nachrichten um, bevor sie geschrieben werden
+            for message in reversed(self.messages):
                 message.urls = extractUrls(message)
                 writer.writerow(message.getMessageRow(self.username, self.member_count, self.isBroadcastingChannel))
-
                 for comment in message.comments:
                     comment.urls = extractUrls(comment)
                     writer.writerow(comment.getMessageRow(self.username, self.member_count, self.isBroadcastingChannel))
 
-        with open(users_csv, "w", encoding="utf-8", newline='') as users_csv:
-            writer = csv.writer(users_csv)
-            writer.writerow(Message.getUserHeader())
-            for user in self.users:
-                # Write in user table.
-                writer.writerow(
-                    [self.username, user.id, user.first_name, user.last_name, concat(user.first_name, user.last_name),
-                     user.phone, user.bot, user.verified, user.username])
+        # Schreiben der Benutzerinformationen in users_csv
+        with open(users_csv, "a" if append else "w", encoding="utf-8", newline='') as usersFile:
+            writer = csv.writer(usersFile)
+            if not append:  # Schreibe Kopfzeile nur beim ersten Mal
+                writer.writerow(Message.getUserHeader())
+            for user in reversed(self.users):
+                writer.writerow([self.username, user.id, user.first_name, user.last_name, concat(user.first_name, user.last_name), user.phone, user.bot, user.verified, user.username])
+
+        # Leeren der Nachrichten- und Benutzerlisten nach dem Schreiben
+        self.messages.clear()
+        self.users.clear()
+
+
 
     async def __parseForward(self, message, new_message):
         if message.forward is not None:
