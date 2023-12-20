@@ -4,19 +4,24 @@ api_id: #Put Numeric API ID here
 api_hash: #Put API hash string here
 phone: #Put phone number string here
 
-### INPUT CHANNEL FILES ###
-#input_channel_file: telegram_accounts.csv
-input_channel_file: channels.csv
+### Scrape/Input CHANNEL FILES ###
+scrape_channel_file: scrape_channels.csv
+
+### Post/Output CHANNEL FILES ###
+post_channel_file: post_channels.csv
 
 ### SCRAPING SETTINGS ####
 # More extensive logging if true.
 debug_mode: false
 
 # Specify scrape mode: FULL_SCRAPE vs. OFFSET_SCRAPE
-scrape_mode: FULL_SCRAPE
+scrape_type: FULL_SCRAPE
 
 # Only relevant on OFFSET_SCRAPE mode. Set the amount of days to go back in chat history.
 scrape_offset: 30
+
+#Scrape Mode
+mode: normal
 
 # There is a different driver needed for aws.
 driver_mode: "normal"

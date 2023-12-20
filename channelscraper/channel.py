@@ -35,25 +35,44 @@ class Channel:
         self.path = getOutputPath() + "/" + self.username
         self.messages = list()
 
-    def scrape(self):
+    def processChannelMessages(self):
         create_path_if_not_exists(self.path)
 
-        if Channel.config.get("scrape_mode") == "OFFSET_SCRAPE":
+        if Channel.config.get("scrape_type") == "OFFSET_SCRAPE":
             self.getRecentChannelMessages()
-        elif Channel.config.get("scrape_mode") == "FULL_SCRAPE":
+        elif Channel.config.get("scrape_type") == "FULL_SCRAPE":
             self.getAllChannelMessages()
-        elif Channel.config.get("scrape_mode") == "LATEST_SCRAPE":
+        elif Channel.config.get("scrape_type") == "LATEST_SCRAPE":
             self.getLatestChannelMessages()
-        elif Channel.config.get("scrape_mode") == "CONTINUOUS_SCRAPE":
-            self.continuousScrape()  
         else:
             raise AttributeError("Invalid scraping mode set in config file.")
 
+    async def sendMessagesToGroups(self, group_ids, messages_to_send):
+        """ Sendet Nachrichten an mehrere spezifizierte Gruppen. """
+        async with Channel.client:
+            for group_id in group_ids:
+                for message in messages_to_send:  # Verwende die übergebene Nachrichtenliste
+                    try:
+                        if message.media and os.path.exists(f"{self.path}/media/{message.id}.jpg"):
+                            media_path = f"{self.path}/media/{message.id}.jpg"
+                            await Channel.client.send_file(group_id, media_path, caption=message.text)
+                        elif message.text:
+                            await Channel.client.send_message(group_id, message.text)
+                    except Exception as e:
+                        logging.error(f"Fehler beim Senden der Nachricht/Medien an Gruppe {group_id}: {e}")
 
-    def continuousScrape(self):
-        """ Continuously scrapes new messages every minute. """
+    def sendMessagesToGroupsAsync(self, group_ids, messages_to_send):
+        """ Führt die asynchrone sendMessagesToGroups Funktion aus, sendet Nachrichten in umgekehrter Reihenfolge. """
+        loop = asyncio.get_event_loop()
+        reversed_messages = list(reversed(messages_to_send)) 
+        loop.run_until_complete(self.sendMessagesToGroups(group_ids, reversed_messages))
+
+
+
+    def continuousScrape(self, target_group_ids):
+        """ Continuously scrapes new messages and sends them to target groups. """
         last_timestamp, last_content = self.getLastMessageInfo()
-        first_run = True  # Variable, um zu überprüfen, ob es der erste Durchlauf ist
+        first_run = True
 
         if last_timestamp is None:
             self.getRecentChannelMessages()
@@ -64,20 +83,23 @@ class Channel:
         async def fetchMessages():
             nonlocal last_timestamp, last_content, first_run
             while True:
-                new_messages = False  # Flag um festzustellen, ob neue Nachrichten gefunden wurden
+                new_messages = []  # Speichert neue Nachrichten
 
                 async for message in Channel.client.iter_messages(self.username, offset_date=last_timestamp, reverse=True):
                     if isinstance(message, telethon.tl.types.Message):
                         message_time = message.date.replace(tzinfo=None)
-                        if last_timestamp is not None and (message_time > last_timestamp or (message_time == last_timestamp and message.text != last_content)):
+                        if last_timestamp is None or (message_time > last_timestamp or (message_time == last_timestamp and message.text != last_content)):
                             await self.parseMessage(message)
+                            new_messages.append(message)
                             last_timestamp, last_content = message_time, message.text
-                            new_messages = True
 
                 if new_messages:
                     self.writeCsv(append=not first_run)
                     if first_run:
-                        first_run = False  # Setze first_run auf False nach dem ersten Durchlauf
+                        first_run = False
+
+                    # Sendet die neuen Nachrichten an die Zielgruppen
+                    await self.sendMessagesToGroups(target_group_ids, new_messages)
 
                 await asyncio.sleep(10)  # Warte 10 Sekunden
 
@@ -86,38 +108,6 @@ class Channel:
                 Channel.client.loop.run_until_complete(fetchMessages())
             except Exception as e:
                 logging.error(f"Error during continuous scrape: {e}")
-                pass
-
-
-
-
-
-    # Collects LATEST messages and comments from a given channel.
-    def getLatestChannelMessages(self):
-        """ Scrapes messages of a channel since the last saved message and saves the information in the channel object.
-        """
-
-        async def main():
-            last_timestamp, last_content = self.getLastMessageInfo()
-            if last_timestamp:
-                async for message in Channel.client.iter_messages(self.username, offset_date=last_timestamp, reverse=True):
-                    if type(message) == telethon.tl.types.Message:
-                        message_time = message.date.replace(tzinfo=None)
-                        if message_time > last_timestamp or (message_time == last_timestamp and message.text != last_content):
-                            await self.parseMessage(message)
-
-        with Channel.client:
-            try:
-                Channel.client.loop.run_until_complete(main())
-            except telethon.errors.ServerError:
-                logging.info("Server error: Passed")
-                pass
-            except telethon.errors.FloodWaitError as e:
-                logging.info("FloodWaitError: Sleep for " + str(e.seconds))
-                time.sleep(e.seconds)
-
-        self.messages = list(reversed(self.messages))
-
 
 
 
@@ -130,7 +120,7 @@ class Channel:
             last_timestamp, last_content = self.getLastMessageInfo()
 
             if last_timestamp is None:
-                self.getRecentChannelMessages()
+                await self.getRecentChannelMessages()
                 return
 
             if last_timestamp:

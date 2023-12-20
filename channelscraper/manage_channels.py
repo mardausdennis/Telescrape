@@ -10,81 +10,87 @@ def read_config():
 def getInputPath():
     return os.path.join(os.path.dirname(__file__), '..', 'input')
 
-def listChannels():
+def listChannels(channel_file, channel_type):
     channels = []
     try:
-        with open(os.path.join(getInputPath(), 'channels.csv'), newline='', encoding='utf-8') as csvfile:
+        with open(os.path.join(getInputPath(), channel_file), newline='', encoding='utf-8') as csvfile:
             reader = csv.reader(csvfile)
-            next(reader)  
+            next(reader)
             for index, row in enumerate(reader, start=1):
                 channels.append(row)
                 print(f"{index}. {row[1]} (@{row[3]})")
         if not channels:
-            print("Keine Channels vorhanden. Fügen Sie einen neuen Channel hinzu.")
-            addChannel()
-            return listChannels() 
+            print(f"Keine {channel_type}-Channels vorhanden. Fügen Sie einen neuen Channel hinzu.")
+            addChannel(channel_file, channel_type)
+            return listChannels(channel_file, channel_type)
     except FileNotFoundError:
-        print("channels.csv Datei nicht gefunden. Erstellen einer neuen Datei.")
-        addChannel()
-        return listChannels()  
+        print(f"{channel_file} Datei nicht gefunden. Erstellen einer neuen Datei.")
+        addChannel(channel_file, channel_type)
+        return listChannels(channel_file, channel_type)
     return channels
 
-def selectChannel(channels):
-    print("\nOptionen:")
-    print("  [Nummer] Einen spezifischen Channel wählen.")
-    print("  [a/all] Alle Channels wählen.")
-    print("  [n/neu] Einen neuen Channel hinzufügen.")
-    print("  [d/löschen] Einen Channel löschen.")
-    user_input = input("Bitte wählen Sie eine Option: ").strip().lower()
-
-    if user_input in ["n", "neu"]:
-        addChannel()
-        channels = listChannels()  
-        return selectChannel(channels)  
-
-    if user_input in ["d", "löschen"]:
-        deleteChannel(channels)
-        channels = listChannels()
-        return selectChannel(channels)
-
-    if user_input.isdigit():
-        choice = int(user_input)
-        if 1 <= choice <= len(channels):
-            return [channels[choice - 1]]  
-
-    if user_input in ["a", "all"]:
-        return channels 
-
-    print("Ungültige Eingabe. Alle Channels werden verwendet.")
-    return channels  
-
-def addChannel():
-    print("Bitte geben Sie die Channel-Daten ein:")
+def addChannel(channel_file, channel_type):
+    print(f"Bitte geben Sie die Daten für den {channel_type}-Channel ein:")
     kategorie = input("Kategorie: ")
     name = input("Name: ")
     link = input("Link: ")
     username = input("@: ")
     broadcast = input("Broadcast (TRUE/FALSE): ").strip().lower()
     broadcast = "TRUE" if broadcast in ["true", "1", "t"] else "FALSE"
-    with open(os.path.join(getInputPath(), 'channels.csv'), 'a', newline='', encoding='utf-8') as csvfile:
+    with open(os.path.join(getInputPath(), channel_file), 'a', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow([kategorie, name, link, username, broadcast])
 
-def deleteChannel(channels):
-    print("Bitte geben Sie die ID des zu löschenden Channels ein:")
+def selectChannel(channels, channel_type):
+    print("\nOptionen für " + channel_type + "-Channels:")
+    print("  [Nummer] Einen spezifischen Channel wählen.")
+    print("  [a/all] Alle Channels wählen.")
+    print("  [n/neu] Einen neuen Channel hinzufügen.")
+    print("  [d/löschen] Einen Channel löschen.")
+
+    # Bestimme den Dateinamen basierend auf dem channel_type
+    channel_file = 'post_channels.csv' if channel_type == 'Post' else 'scrape_channels.csv'
+
+    user_input = input("Bitte wählen Sie eine Option: ").strip().lower()
+
+    if user_input in ["n", "neu"]:
+        addChannel(channel_file, channel_type)
+        channels = listChannels(channel_file, channel_type)
+        return selectChannel(channels, channel_type)
+
+    if user_input in ["d", "löschen"]:
+        deleteChannel(channels, channel_file, channel_type)
+        channels = listChannels(channel_file, channel_type)
+        return selectChannel(channels, channel_type)
+
+    if user_input.isdigit():
+        choice = int(user_input)
+        if 1 <= choice <= len(channels):
+            return [channels[choice - 1]]
+
+    if user_input in ["a", "all"]:
+        return channels
+
+    print("Ungültige Eingabe. Alle Channels werden verwendet.")
+    return channels
+
+
+def deleteChannel(channels, channel_file, channel_type):
+    print(f"Bitte geben Sie die ID des zu löschenden {channel_type}-Channels ein:")
     try:
         channel_id = int(input("ID: "))
         if 1 <= channel_id <= len(channels):
             del channels[channel_id - 1]
-            with open(os.path.join(getInputPath(), 'channels.csv'), 'w', newline='', encoding='utf-8') as csvfile:
+            with open(os.path.join(getInputPath(), channel_file), 'w', newline='', encoding='utf-8') as csvfile:
                 writer = csv.writer(csvfile)
                 for channel in channels:
                     writer.writerow(channel)
-            print("Channel gelöscht.")
+            print(f"{channel_type}-Channel gelöscht.")
         else:
             print("Ungültige Channel-ID.")
     except ValueError:
         print("Ungültige Eingabe. Bitte geben Sie eine Zahl ein.")
+
 
 def runScraper(mode, selected_ids_str):
     if mode.lower() == 'meta':
@@ -94,14 +100,22 @@ def runScraper(mode, selected_ids_str):
 
 def main():
     config = read_config()
-    mode = config.get('mode', 'normal')  
-    print("Verfügbare Channels:")
-    channels = listChannels()  
-    selected_channels = selectChannel(channels)  
-    selected_ids = [str(index) for index, _ in enumerate(channels, start=1) if _ in selected_channels]
-    selected_ids_str = ' '.join(selected_ids)
+    mode = config.get('mode', 'normal')
 
-    runScraper(mode, selected_ids_str)
+    print("Verfügbare Scrape-Channels:")
+    scrape_channels = listChannels('scrape_channels.csv', 'Scrape')
+    selected_scrape_channels = selectChannel(scrape_channels, 'Scrape')
+    selected_scrape_ids = [str(index) for index, _ in enumerate(scrape_channels, start=1) if _ in selected_scrape_channels]
+
+    print("\nVerfügbare Post-Channels:")
+    post_channels = listChannels('post_channels.csv', 'Post')
+    selected_post_channels = selectChannel(post_channels, 'Post')
+    selected_post_ids = [str(index) for index, _ in enumerate(post_channels, start=1) if _ in selected_post_channels]
+
+    selected_scrape_ids_str = ' '.join(selected_scrape_ids)
+    selected_post_ids_str = ' '.join(selected_post_ids)
+
+    runScraper(mode, selected_scrape_ids_str, selected_post_ids_str)
 
 if __name__ == "__main__":
     main()

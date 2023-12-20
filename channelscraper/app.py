@@ -13,7 +13,8 @@ from channel import Channel
 from driver import Driver
 
 # Argumente von der Kommandozeile lesen
-selected_channel_ids = sys.argv[1:]  # Erstes Element überspringen, da es den Skriptnamen enthält
+selected_scrape_channel_ids = sys.argv[1:] 
+selected_post_channel_ids = sys.argv[2:] 
 
 def getChannelList(filename, selected_ids=None):
     """Initialises the CSV of channels to scrape given by ADDENDUM."""
@@ -28,32 +29,42 @@ def getChannelList(filename, selected_ids=None):
 
 # Konfiguration und Kanalliste laden
 config = yaml.safe_load(open("config.yaml"))
-input_file = config["input_channel_file"]
-channels = getChannelList(input_file, selected_channel_ids)
+post_file = config["post_channel_file"]
+scrape_file = config["scrape_channel_file"]
+scrape_channels = getChannelList(scrape_file, selected_scrape_channel_ids)
+post_channels = getChannelList(post_file, selected_post_channel_ids)
 
 
-for channel in channels:
-    channelPath = getInputPath() + "/" + channel.username
-    logging.info("Collecting channel: " + channel.username)
-    logging.info("-> Collecting messages")
-    # Scrape Channels
-    try:
-        channel.scrape()
-    except:
-        traceback.print_exc()
-        pass
+for channel in scrape_channels:
+    if Channel.config.get("scrape_type") == "CONTINUOUS_SCRAPE":
+        try:
+            target_group_ids = [post_channel.username for post_channel in post_channels]
+            channel.continuousScrape(target_group_ids)
+        except Exception as e:
+            logging.error(f"Fehler beim kontinuierlichen Scraping: {e}")
+    else:
+        try:
+            channel.processChannelMessages()
+        except:
+            traceback.print_exc()
+            pass
 
-    try:
-        channel.getChannelUsers()
-    except:
-        traceback.print_exc()
-        pass
+        try:
+            target_group_ids = [post_channel.username for post_channel in post_channels]
+            channel.sendMessagesToGroupsAsync(target_group_ids, channel.messages)  # Verwende die neue Funktio
+        except Exception as e:
+            logging.error(f"Fehler beim Senden von Nachrichten an die Zielgruppen: {e}")
 
-    # WriteCsv
-    try:
-        channel.writeCsv()
-    except:
-        traceback.print_exc()
-        pass
+        try:
+            channel.getChannelUsers()
+        except:
+            traceback.print_exc()
+            pass
+
+        try:
+            channel.writeCsv()
+        except:
+            traceback.print_exc()
+            pass
 
 Driver.closeDriver()

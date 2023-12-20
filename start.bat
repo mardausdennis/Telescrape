@@ -71,12 +71,12 @@ IF /I "!MODE_LOWER!"=="n" (
 
 :SCRAPE_MODUS_AKTUALISIEREN
 :: Scrape-Modus aktualisieren
-SET /P SCRAPE_MODE="Scrape-Modus wählen (Full/Offset/Latest/Continuous) oder drücke Enter, um den aktuellen beizubehalten: "
-SET SCRAPE_MODE_LOWER=!SCRAPE_MODE:~0,1!
-IF "%SCRAPE_MODE%"=="" GOTO SHOW_UPDATED_CONFIG
-IF /I "!SCRAPE_MODE_LOWER!"=="f" (
+SET /P SCRAPE_TYPE="Scrape-Modus wählen (Full/Offset/Latest/Continuous) oder drücke Enter, um den aktuellen beizubehalten: "
+SET SCRAPE_TYPE_LOWER=!SCRAPE_TYPE:~0,1!
+IF "%SCRAPE_TYPE%"=="" GOTO SHOW_UPDATED_CONFIG
+IF /I "!SCRAPE_TYPE_LOWER!"=="f" (
     CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% full
-) ELSE IF /I "!SCRAPE_MODE_LOWER!"=="o" (
+) ELSE IF /I "!SCRAPE_TYPE_LOWER!"=="o" (
     :OFFSET_EINGEBEN
     SET /P OFFSET_DAYS="Gib die Anzahl der Tage für den Offset ein (0-9999): "
     SET /A OFFSET_DAYS=1*!OFFSET_DAYS!
@@ -84,9 +84,9 @@ IF /I "!SCRAPE_MODE_LOWER!"=="f" (
     IF !OFFSET_DAYS! LSS 0 SET OFFSET_DAYS=0
     IF !OFFSET_DAYS! GTR 9999 SET OFFSET_DAYS=9999
     CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% offset !OFFSET_DAYS!
-) ELSE IF /I "!SCRAPE_MODE_LOWER!"=="l" (
+) ELSE IF /I "!SCRAPE_TYPE_LOWER!"=="l" (
     CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% latest
-) ELSE IF /I "!SCRAPE_MODE_LOWER!"=="c" (
+) ELSE IF /I "!SCRAPE_TYPE_LOWER!"=="c" (
     CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% continuous
 ) ELSE (
     ECHO Ungültige Eingabe. Bitte wähle entweder 'Full', 'Offset' oder 'Latest'.

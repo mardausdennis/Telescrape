@@ -9,14 +9,14 @@ def update_config(scraper_dir, key, value):
     if key == 'mode':
         config['mode'] = value
     elif key == 'offset':
-        config['scrape_mode'] = 'OFFSET_SCRAPE'
+        config['scrape_type'] = 'OFFSET_SCRAPE'
         config['scrape_offset'] = int(value)
     elif key == 'full':
-        config['scrape_mode'] = 'FULL_SCRAPE'
+        config['scrape_type'] = 'FULL_SCRAPE'
     elif key == 'latest': 
-        config['scrape_mode'] = 'LATEST_SCRAPE'
+        config['scrape_type'] = 'LATEST_SCRAPE'
     elif key == 'continuous': 
-        config['scrape_mode'] = 'CONTINUOUS_SCRAPE'
+        config['scrape_type'] = 'CONTINUOUS_SCRAPE'
 
     with open(config_path, 'w') as file:
         yaml.dump(config, file)

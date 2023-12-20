@@ -27,8 +27,8 @@ def getChannelList(filename, selected_ids=None):
 
 client = Client.getClient()
 config = yaml.safe_load(open("config.yaml"))
-input_file = config["input_channel_file"]
-channels = getChannelList(input_file, selected_channel_ids)
+scrape_file = config["scrape_channel_file"]
+channels = getChannelList(scrape_file, selected_channel_ids)
 
 channel_info_list = []
 i = 0

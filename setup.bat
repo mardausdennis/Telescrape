@@ -87,21 +87,32 @@ IF "!phone:~10,1!"=="" GOTO PHONE_INPUT
 
 :: Aktualisieren der config.yaml Datei mit den Benutzereingaben
 (
-    ECHO #### API CREDENTIALS #####
-    ECHO # Credentials for telegram API
-    ECHO api_id: !api_id!
-    ECHO api_hash: !api_hash!
-    ECHO phone: !phone!
-    ECHO ### INPUT CHANNEL FILES ###
-    ECHO input_channel_file: channels.csv
-    ECHO ### SCRAPING SETTINGS ####
-    ECHO debug_mode: true
-    ECHO scrape_mode: FULL_SCRAPE
-    ECHO scrape_offset: 30
-    ECHO driver_mode: "normal"
-    ECHO init: False
-    ECHO media_download: False
-    ECHO query_users: False
+ECHO #### API CREDENTIALS #####
+ECHO # Credentials for telegram API
+ECHO api_id: !api_id!
+ECHO api_hash: !api_hash!
+ECHO phone: !phone!
+ECHO ### Scrape/Input CHANNEL FILES ###
+ECHO scrape_channel_file: scrape_channels.csv
+ECHO ### Post/Output CHANNEL FILES ###
+ECHO post_channel_file: post_channels.csv
+ECHO ### SCRAPING SETTINGS ####
+ECHO # More extensive logging if true.
+ECHO debug_mode: false
+ECHO # Specify scrape mode: FULL_SCRAPE vs. OFFSET_SCRAPE vs. LATEST_SCRAPE vs. CONTINUOUS_SCRAPE
+ECHO scrape_type: CONTINUOUS_SCRAPE
+ECHO # Relevant on OFFSET_SCRAPE (, LATEST_SCRAPE and CONTINUOUS_SCRAPE when no last message yet) mode. Set the amount of days to go back in chat history.
+ECHO scrape_offset: 30
+ECHO #Scrape Mode
+ECHO mode: normal
+ECHO # There is a different driver needed for aws.
+ECHO driver_mode: "normal"
+ECHO # If true, the script will run slower in order to avoid being blocked.
+ECHO init: False
+ECHO # If true, media files will be downloaded as well. On default those are photos. If you want something different edit source-code.
+ECHO media_download: False
+ECHO # Query comments.bot/app usernames. Attention: This can lead to a API-ban more likely.
+ECHO query_users: False
 ) > channelscraper\config.yaml
 
 ECHO Konfiguration abgeschlossen. Du kannst nun den Telegram Scraper starten.
