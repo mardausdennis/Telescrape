@@ -101,10 +101,8 @@ ECHO # More extensive logging if true.
 ECHO debug_mode: false
 ECHO # Specify scrape mode: FULL_SCRAPE vs. OFFSET_SCRAPE vs. LATEST_SCRAPE vs. CONTINUOUS_SCRAPE
 ECHO scrape_type: CONTINUOUS_SCRAPE
-ECHO # Relevant on OFFSET_SCRAPE (, LATEST_SCRAPE and CONTINUOUS_SCRAPE when no last message yet) mode. Set the amount of days to go back in chat history.
+ECHO # Relevant on OFFSET_SCRAPE, LATEST_SCRAPE and CONTINUOUS_SCRAPE when no last message yet mode. Set the amount of days to go back in chat history.
 ECHO scrape_offset: 30
-ECHO #Scrape Mode
-ECHO mode: normal
 ECHO # There is a different driver needed for aws.
 ECHO driver_mode: "normal"
 ECHO # If true, the script will run slower in order to avoid being blocked.

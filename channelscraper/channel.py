@@ -35,6 +35,8 @@ class Channel:
         self.path = getOutputPath() + "/" + self.username
         self.messages = list()
 
+        self.first_run = True
+
     def processChannelMessages(self):
         create_path_if_not_exists(self.path)
 
@@ -69,66 +71,60 @@ class Channel:
 
 
 
-    def continuousScrape(self, target_group_ids):
-        """ Continuously scrapes new messages and sends them to target groups. """
+    def continuousScrape(self, target_group_ids, send_messages=True):
         last_timestamp, last_content = self.getLastMessageInfo()
-        first_run = True
-
-        if last_timestamp is None:
-            self.getRecentChannelMessages()
-            self.writeCsv(append=False)  # Erstelle eine neue CSV-Datei
-            last_timestamp, last_content = self.getLastMessageInfo()  # Aktualisiere die Werte
-            first_run = False  # Nach getRecentChannelMessages ist es nicht mehr der erste Durchlauf
 
         async def fetchMessages():
-            nonlocal last_timestamp, last_content, first_run
-            while True:
-                new_messages = []  # Speichert neue Nachrichten
+            nonlocal last_timestamp, last_content
+            
+            new_messages = []  # Speichert neue Nachrichten
 
-                async for message in Channel.client.iter_messages(self.username, offset_date=last_timestamp, reverse=True):
-                    if isinstance(message, telethon.tl.types.Message):
-                        message_time = message.date.replace(tzinfo=None)
-                        if last_timestamp is None or (message_time > last_timestamp or (message_time == last_timestamp and message.text != last_content)):
-                            await self.parseMessage(message)
-                            new_messages.append(message)
-                            last_timestamp, last_content = message_time, message.text
+            async for message in Channel.client.iter_messages(self.username, offset_date=last_timestamp, reverse=True):
+                if isinstance(message, telethon.tl.types.Message):
+                    message_time = message.date.replace(tzinfo=None)
+                    if last_timestamp is None or (message_time > last_timestamp or (message_time == last_timestamp and message.text != last_content)):
+                        await self.parseMessage(message)
+                        new_messages.append(message)
+                        last_timestamp, last_content = message_time, message.text
 
-                if new_messages:
-                    self.writeCsv(append=not first_run)
-                    if first_run:
-                        first_run = False
+            if new_messages:
+                self.messages = list(reversed(self.messages))
+                self.writeCsv(append=not self.first_run)
+                if self.first_run:
+                    self.first_run = False
 
-                    # Sendet die neuen Nachrichten an die Zielgruppen
+                if send_messages:
                     await self.sendMessagesToGroups(target_group_ids, new_messages)
 
-                await asyncio.sleep(10)  # Warte 10 Sekunden
+            await asyncio.sleep(10)  # Warte 10 Sekunden
 
         with Channel.client:
             try:
                 Channel.client.loop.run_until_complete(fetchMessages())
             except Exception as e:
-                logging.error(f"Error during continuous scrape: {e}")
+                logging.error(f"Fehler beim kontinuierlichen Scraping: {e}")
+
 
 
 
     # Collects LATEST messages and comments from a given channel.
     def getLatestChannelMessages(self):
-        """ Scrapes messages of a channel since the last saved message and saves the information in the channel object.
-        """
+        """ Scrapes messages of a channel since the last saved message and saves the information in the channel object. """
+
+        last_timestamp, last_content = self.getLastMessageInfo()
+
+        # Führen Sie diese Überprüfung außerhalb der asynchronen main-Funktion durch
+        if last_timestamp is None:
+            self.getRecentChannelMessages()  # Beachten Sie, dass dies synchron aufgerufen wird
+            return
 
         async def main():
-            last_timestamp, last_content = self.getLastMessageInfo()
-
-            if last_timestamp is None:
-                await self.getRecentChannelMessages()
-                return
-
-            if last_timestamp:
-                async for message in Channel.client.iter_messages(self.username, offset_date=last_timestamp, reverse=True):
-                    if type(message) == telethon.tl.types.Message:
-                        message_time = message.date.replace(tzinfo=None)
-                        if message_time > last_timestamp or (message_time == last_timestamp and message.text != last_content):
-                            await self.parseMessage(message)
+            # Da last_timestamp nun nicht None ist, führen Sie die asynchrone Logik aus
+            async for message in Channel.client.iter_messages(self.username, offset_date=last_timestamp, reverse=True):
+                if isinstance(message, telethon.tl.types.Message):
+                    message_time = message.date.replace(tzinfo=None)
+                    if message_time > last_timestamp or (message_time == last_timestamp and message.text != last_content):
+                        await self.parseMessage(message)
 
         with Channel.client:
             try:
@@ -141,6 +137,7 @@ class Channel:
                 time.sleep(e.seconds)
 
         self.messages = list(reversed(self.messages))
+
 
 
 
@@ -309,6 +306,8 @@ class Channel:
         # Basispfad für die Dateien
         chatlogs_base = self.path + "/chatlogs_"
         users_base = self.path + "/users_"
+
+        os.makedirs(self.path, exist_ok=True)
 
         if append:
             # Liste alle Dateien im Verzeichnis auf, die dem Muster entsprechen

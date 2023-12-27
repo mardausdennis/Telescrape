@@ -57,17 +57,34 @@ IF /I "!UPDATE_SETTINGS_LOWER!"=="j" (
 :UPDATE_CONFIG
 :: Modus aktualisieren
 :MODUS_AKTUALISIEREN
-SET /P MODE="Wähle den Modus (Normal/Meta) oder drücke Enter, um den aktuellen beizubehalten: "
-SET MODE_LOWER=!MODE:~0,1!
-IF "%MODE%"=="" GOTO SCRAPE_MODUS_AKTUALISIEREN
-IF /I "!MODE_LOWER!"=="n" (
-    CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% mode normal
-) ELSE IF /I "!MODE_LOWER!"=="m" (
+ECHO Wähle den Modus:
+ECHO 1 - Scrape
+ECHO 2 - ScrapeAndSend
+ECHO 3 - Meta
+SET /P MODE="Gib die Nummer oder den Modus ein: "
+IF "%MODE%"=="1" (
+    CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% mode scrape
+) ELSE IF /I "%MODE:~0,1%"=="s" (
+    IF /I NOT "%MODE:~0,10%"=="scrapeands" (
+        CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% mode scrape
+    ) ELSE (
+        CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% mode scrapeandsend
+    )
+) ELSE IF "%MODE%"=="2" (
+    CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% mode scrapeandsend
+) ELSE IF "%MODE%"=="3" (
     CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% mode meta
+) ELSE IF /I "%MODE%"=="meta" (
+    CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% mode meta
+) ELSE IF /I "%MODE%"=="scrapeandsend" (
+    CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% mode scrapeandsend
+) ELSE IF /I "%MODE%"=="scrape" (
+    CALL %PYTHON_CMD% %SCRAPER_DIR%\update_config.py %SCRAPER_DIR% mode scrape
 ) ELSE (
-    ECHO Ungültige Eingabe. Bitte wähle entweder 'normal' oder 'meta'.
+    ECHO Ungültige Eingabe. Bitte wähle 1, 2, 3, scrape, scrapeandsend oder meta.
     GOTO MODUS_AKTUALISIEREN
 )
+
 
 :SCRAPE_MODUS_AKTUALISIEREN
 :: Scrape-Modus aktualisieren

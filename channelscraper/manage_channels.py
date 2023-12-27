@@ -15,8 +15,12 @@ def listChannels(channel_file, channel_type):
     try:
         with open(os.path.join(getInputPath(), channel_file), newline='', encoding='utf-8') as csvfile:
             reader = csv.reader(csvfile)
-            next(reader)
+            header = next(reader, None)  # Sicherstellen, dass eine Header-Zeile vorhanden ist
+            if not header:
+                raise ValueError(f"Die Datei {channel_file} hat keinen Header.")
             for index, row in enumerate(reader, start=1):
+                if len(row) < 4:  # Überprüfen, ob genügend Spalten vorhanden sind
+                    continue
                 channels.append(row)
                 print(f"{index}. {row[1]} (@{row[3]})")
         if not channels:
@@ -24,10 +28,18 @@ def listChannels(channel_file, channel_type):
             addChannel(channel_file, channel_type)
             return listChannels(channel_file, channel_type)
     except FileNotFoundError:
-        print(f"{channel_file} Datei nicht gefunden. Erstellen einer neuen Datei.")
-        addChannel(channel_file, channel_type)
-        return listChannels(channel_file, channel_type)
+        print(f"{channel_file} Datei nicht gefunden. Erstellen einer neuen Datei mit Header.")
+        header = ["Kategorie", "Name", "Link", "@", "Broadcast"]
+        file_path = os.path.join(getInputPath(), channel_file)
+        with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(header)
+        return listChannels(channel_file, channel_type)  # Liste aktualisieren und zurückgeben
+    except ValueError as e:
+        print(e)
+        return []
     return channels
+
 
 def addChannel(channel_file, channel_type):
     print(f"Bitte geben Sie die Daten für den {channel_type}-Channel ein:")
@@ -92,11 +104,16 @@ def deleteChannel(channels, channel_file, channel_type):
         print("Ungültige Eingabe. Bitte geben Sie eine Zahl ein.")
 
 
-def runScraper(mode, selected_ids_str):
-    if mode.lower() == 'meta':
-        os.system(f'{sys.executable} scrapeChannelMetadata.py {selected_ids_str}')
+def runScraper(mode, selected_scrape_ids_str, selected_post_ids_str):
+    if mode.lower() == 'scrape':
+        os.system(f'{sys.executable} app.py scrape {selected_scrape_ids_str} {selected_post_ids_str}')
+    elif mode.lower() == 'scrapeandsend':
+        os.system(f'{sys.executable} app.py scrapeandsend {selected_scrape_ids_str} {selected_post_ids_str}')
+    elif mode.lower() == 'meta':
+        os.system(f'{sys.executable} scrapeChannelMetadata.py {selected_scrape_ids_str} {selected_post_ids_str}')
     else:
-        os.system(f'{sys.executable} app.py {selected_ids_str}')
+        print(f"Unbekannter Modus: {mode}")
+
 
 def main():
     config = read_config()

@@ -1,2 +1,3 @@
-"Kategorie","Name","Link","@","Broadcast"
-
+Kategorie,Name,Link,@,Broadcast
+Gruppe Typ Test,TestScraperChannel,https://t.me/scrapemetester,scrapemetester,TRUE
+Gruppe Typ Test,TestScraperChannel2,https://t.me/TestScraperChannel4,TestScraperChannel4,TRUE
